@@ -35,7 +35,8 @@ def create_tables():
             with conn.cursor() as cur:
                 sql_create_table = '''CREATE TABLE IF NOT EXISTS user_data (
                                         user_id BIGINT PRIMARY KEY,
-                                        user_name VARCHAR(100) NOT NULL);
+                                        user_name VARCHAR(100) NOT NULL)
+                                        status INT DEFAULT 0;
                                     '''
                 cur.execute(sql_create_table)
                 sql_create_table = '''CREATE TABLE IF NOT EXISTS word (

@@ -3,3 +3,6 @@ python-dotenv~=1.0.1
 aiohttp~=3.9.1
 requests~=2.26.0
 asyncpg
+pydantic
+pydantic_settings
+psycopg2
