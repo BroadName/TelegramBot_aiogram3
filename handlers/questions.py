@@ -12,7 +12,7 @@ rus = {'й', 'ц', 'у', 'к', 'е', 'н', 'г', 'ш', 'щ', 'з', 'х', 'ъ', '
            'э', 'я', 'ч', 'с', 'м', 'и', 'т', 'ь', 'б', 'ю', 'ё'}
 
 eng = {'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'z', 'x', 'c',
-           'v', 'b', 'n', 'm'}
+           'v', 'b', 'n', 'm', "'"}
 
 start_words = {'i': 'я', 'she': 'она', 'he': 'он', 'they': 'они', 'we': 'мы', 'red': 'красный', 'black': 'черный',
                'yellow': 'желтый', 'blue': 'синий', 'green': 'зеленый'}
@@ -33,9 +33,9 @@ async def cmd_start(message: Message, request: Request):
 
 @router.message(F.text)
 async def check_add(message: Message, state: FSMContext):
-    await message.answer('Введите новое слово и его перевод через пробел',
+    await message.answer('Введите новое слово(выражение) на английском языке',
                          reply_murkup=ReplyKeyboardRemove())
-    await state.set_state(StepsForm.GET_WORD)
+    await state.set_state(StepsForm.GET_ENG_WORD)
 
 
 @router.message(F.text)
@@ -59,14 +59,28 @@ async def delete_word(message: Message, request: Request, state: FSMContext):
 
 
 @router.message(F.text)
+async def get_eng_word(message: Message, state: FSMContext):
+    check = message.text.lower().replace(' ', '')
+    if (set(check) - eng) == set():
+        await message.answer('Введите его перевод, или определение')
+        await state.update_data(eng_word=message.text)
+        await state.set_state(StepsForm.GET_RUS_WORD)
+    else:
+        await message.answer('Вы ввели неверные данные!\n Слово(выражение) должны быть на английском языке,\n'
+                             'из знаков доступен только апостроф!', reply_markup=next_keyboard_1())
+
+
+@router.message(F.text)
 async def add_new_word(message: Message, request: Request, state: FSMContext):
-    if len(message.text.split()) == 2 and message.text.split()[0][0].lower() in eng\
-            and message.text.split()[1][0].lower() in rus:
-        await request.add_word(message.from_user.id, message.text.split()[0].lower(), message.text.split()[1].lower())
+    check = message.text.lower().replace(' ', '')
+    if (set(check) - rus) == set():
+        eng_word = (await state.get_data()).get('eng_word')
+        await request.add_word(message.from_user.id, eng_word, message.text)
         await message.answer('Well done!', reply_markup=next_keyboard_1())
         await state.clear()
     else:
-        await message.answer('Вы ввели неправильные данные. Введите английское слово а потом его перевод через пробел.'
+        await message.answer('Вы ввели неправильные данные.\n '
+                             'Введите перевод, используя только буквы русского алфавита.\n'
                              'Либо введите команду /start для выбора действий', reply_markup=reply_keyboard)
 
 

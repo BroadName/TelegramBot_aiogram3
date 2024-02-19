@@ -11,7 +11,7 @@ from config_reader import config
 from middlewaries.dbmiddleware import DbSession
 import asyncpg
 from handlers.questions import cmd_start, check_add, add_new_word, delete_word, check_to_del, lets_start, \
-    try_translate, last_word
+    try_translate, last_word, get_eng_word
 from statesform import StepsForm
 
 db_config = configparser.ConfigParser()
@@ -43,7 +43,8 @@ async def main():
     dp.update.middleware.register(DbSession(pool_connect))
     dp.message.register(cmd_start, Command(commands=['start', 'run']))
     dp.message.register(check_add, F.text.lower().in_(['добавить новое слово', 'add a new word', 'add new word']))
-    dp.message.register(add_new_word, StepsForm.GET_WORD)
+    dp.message.register(get_eng_word, StepsForm.GET_ENG_WORD)
+    dp.message.register(add_new_word, StepsForm.GET_RUS_WORD)
     dp.message.register(lets_start, F.text.lower().in_(["let's start!", 'дальше', 'следующее слово', 'следующее']))
     dp.message.register(check_to_del, F.text.lower().in_(['удалить слово', 'delete word']))
     dp.message.register(delete_word, StepsForm.GET_WORD_DEL)
