@@ -48,15 +48,3 @@ class Request:
         row = await self.connector.fetch(query, word)
         data = [dict(i) for i in row]
         return data
-
-    async def check_user(self, user_id):
-        query = '''select status from user_data
-                    where user_id = $1'''
-        row = await self.connector.fetch(query, user_id)
-        data = [dict(i) for i in row]
-        return data
-
-    async def change_status(self, status, user_id):
-        query = '''update user_data set status = $1
-                    where user_id = $2'''
-        await self.connector.execute(query, status, user_id)

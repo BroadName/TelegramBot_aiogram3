@@ -25,11 +25,11 @@ port = db_config['params']['port']
 
 async def create_pool():
     return await asyncpg.create_pool(user=user,
-                                             password=password,
-                                             database='learn_english_db',
-                                             host=host,
-                                             port=port,
-                                             command_timeout=60)
+                                     password=password,
+                                     database='learn_english_db',
+                                     host=host,
+                                     port=port,
+                                     command_timeout=60)
 
 
 async def main():

@@ -43,13 +43,13 @@ reply_keyboard = ReplyKeyboardMarkup(keyboard=[
 def get_random_keyboard(words, translate):
     buttons = [
                 KeyboardButton(
-                    text=f'{choice(words).get("translate")}'
+                    text=f'{choice(words)}'
                 ),
                 KeyboardButton(
-                    text=f'{choice(words).get("translate")}'
+                    text=f'{choice(words)}'
                 ),
                 KeyboardButton(
-                    text=f'{choice(words).get("translate")}'
+                    text=f'{choice(words)}'
                 ),
                 KeyboardButton(
                     text=f'{translate}'
