@@ -43,8 +43,9 @@ async def check_to_del(message: Message, state: FSMContext):
 
 @router.message(F.text)
 async def delete_word(message: Message, request: Request, state: FSMContext):
-    if len(message.text.split()) == 1 and message.text[0].lower() in eng:
-        await request.delete_word(message.from_user.id, message.text.lower())
+    check = message.text.lower().replace(' ', '')
+    if (set(check) - eng) == set():
+        await request.delete_word(message.text.lower())
         await message.answer(f'{message.text} удалено',
                              reply_markup=reply_keyboard)
         await state.clear()
@@ -55,12 +56,16 @@ async def delete_word(message: Message, request: Request, state: FSMContext):
 
 
 @router.message(F.text)
-async def get_eng_word(message: Message, state: FSMContext):
+async def get_eng_word(message: Message, state: FSMContext, request: Request):
     check = message.text.lower().replace(' ', '')
     if (set(check) - eng) == set():
-        await message.answer('Введите его перевод, или определение')
-        await state.update_data(eng_word=message.text)
-        await state.set_state(StepsForm.GET_RUS_WORD)
+        if await request.check_add_word(message.text.lower(), message.from_user.id) == []:
+            await message.answer('Введите его перевод, или определение')
+            await state.update_data(eng_word=message.text)
+            await state.set_state(StepsForm.GET_RUS_WORD)
+        else:
+            await message.answer('Вы уже добавляли это слово.\n'
+                                 'Введите другое или выберите другое действие', reply_markup=reply_keyboard)
     else:
         await message.answer('Вы ввели неверные данные!\nСлово(выражение) должны быть на английском языке,\n'
                              'из знаков доступен только апостроф!', reply_markup=next_keyboard_1())
@@ -69,8 +74,8 @@ async def get_eng_word(message: Message, state: FSMContext):
 @router.message(F.text)
 async def add_new_word(message: Message, request: Request, state: FSMContext):
     check = message.text.lower().replace(' ', '')
+    eng_word = (await state.get_data()).get('eng_word').lower()
     if (set(check) - rus) == set():
-        eng_word = (await state.get_data()).get('eng_word')
         await request.add_word(message.from_user.id, eng_word, message.text)
         await message.answer('Well done!', reply_markup=next_keyboard_1())
         await state.clear()
@@ -79,19 +84,27 @@ async def add_new_word(message: Message, request: Request, state: FSMContext):
                              'Введите перевод, используя только буквы русского алфавита.\n'
                              'Либо введите команду /start для выбора действий', reply_markup=reply_keyboard)
 
+    await state.clear()
+
 
 @router.message(F.text)
 async def lets_start(message: Message, request: Request, state: FSMContext):
-    word = choice(await request.lets_start(message.from_user.id)).get("english")
-    descriptions = await request.get_description(message.from_user.id)
-    translate = (await request.get_translate(word))[0].get('translate')
-    from_db = [i.get('translate') for i in descriptions if i.get('translate') != translate] +\
-              [v for k, v in start_words.items() if v != translate]
-    all_words = list(set(from_db))
-    await message.answer(f'Выберите правильный вариант перевода для слова {word}',
-                         reply_markup=get_random_keyboard(all_words, translate))
-    await state.set_state(StepsForm.GET_TRANSLATE)
-    await state.update_data(right_word=translate, words=all_words)
+    check = await request.check_words(message.from_user.id)
+    if check:
+        word = choice(await request.lets_start(message.from_user.id)).get("english")
+        descriptions = await request.get_description(message.from_user.id)
+        translate = (await request.get_translate(word))[0].get('translate')
+        from_db = [i.get('translate') for i in descriptions if i.get('translate') != translate] +\
+                  [v for k, v in start_words.items() if v != translate]
+        all_words = list(set(from_db))
+        await message.answer(f'Выберите правильный вариант перевода для слова {word}',
+                             reply_markup=get_random_keyboard(all_words, translate))
+        await state.set_state(StepsForm.GET_TRANSLATE)
+        await state.update_data(right_word=translate, words=all_words)
+    else:
+        await message.answer('В вашей базе ещё нет слов, добавьте хотя бы одно слово!',
+                             reply_markup=reply_keyboard)
+        await state.clear()
 
 
 @router.message(F.text)

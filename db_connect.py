@@ -13,17 +13,23 @@ class Request:
 
     async def add_word(self, user_id, word, translation):
         query = '''insert into word (english, translate)
-                        values($1, $2)on conflict (english) do update set translate = $2 ;'''
+                        values($1, $2);'''
         await self.connector.execute(query, word, translation)
 
-        query = '''insert into users_word (user_id, word_id)
-                        values($1, (select word_id from word where english = $2)) on conflict do nothing;'''
-        await self.connector.execute(query, user_id, word)
+        extra_query = '''select max(word_id) from word
+                            where english = $1 and translate = $2'''
+        row = await self.connector.fetch(extra_query, word, translation)
+        data = [dict(i) for i in row]
 
-    async def delete_word(self, user_id, word):
-        query = '''delete from users_word 
-                        where user_id = $1 and word_id=(select word_id from word where english = $2)'''
-        await self.connector.execute(query, user_id, word)
+        query = '''insert into users_word (user_id, word_id)
+                        values($1, $2);'''
+        await self.connector.execute(query, user_id, data[0].get('max'))
+
+    async def delete_word(self, word):
+        query = '''delete from word w
+                        using users_word uw
+                            where w.english = $1 and uw.word_id = w.word_id;'''
+        await self.connector.execute(query, word)
 
     async def lets_start(self, user_id):
         query = '''select english from user_data ud
@@ -46,5 +52,23 @@ class Request:
     async def get_translate(self, word):
         query = '''select translate from word where english = $1'''
         row = await self.connector.fetch(query, word)
+        data = [dict(i) for i in row]
+        return data
+
+    async def check_words(self, user_id):
+        query = '''select english from word w
+                    left join users_word uw on w.word_id = uw.word_id
+                        left join user_data ud on ud.user_id = uw.user_id
+                            where ud.user_id = $1'''
+        row = await self.connector.fetch(query, user_id)
+        data = [dict(i) for i in row]
+        return data
+
+    async def check_add_word(self, word, user_id):
+        query = '''select english from word w
+                    left join users_word uw on uw.word_id = w.word_id
+                        left join user_data ud on ud.user_id = uw.user_id
+                            where ud.user_id = $1 and w.english = $2'''
+        row = await self.connector.fetch(query, user_id, word)
         data = [dict(i) for i in row]
         return data
