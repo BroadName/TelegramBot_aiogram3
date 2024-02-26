@@ -38,6 +38,7 @@ class Request:
                             where ud.user_id = $1'''
         rows = await self.connector.fetch(query, user_id)
         data = [dict(i) for i in rows]
+        print(data)
         return data
 
     async def get_description(self, user_id):
@@ -47,20 +48,12 @@ class Request:
                                     where ud.user_id = $1'''
         rows = await self.connector.fetch(query, user_id)
         data = [dict(i) for i in rows]
+        print(data)
         return data
 
     async def get_translate(self, word):
         query = '''select translate from word where english = $1'''
         row = await self.connector.fetch(query, word)
-        data = [dict(i) for i in row]
-        return data
-
-    async def check_words(self, user_id):
-        query = '''select english from word w
-                    left join users_word uw on w.word_id = uw.word_id
-                        left join user_data ud on ud.user_id = uw.user_id
-                            where ud.user_id = $1'''
-        row = await self.connector.fetch(query, user_id)
         data = [dict(i) for i in row]
         return data
 

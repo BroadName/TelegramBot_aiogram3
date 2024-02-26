@@ -67,8 +67,8 @@ async def get_eng_word(message: Message, state: FSMContext, request: Request):
             await message.answer('Вы уже добавляли это слово.\n'
                                  'Введите другое или выберите другое действие', reply_markup=reply_keyboard)
     else:
-        await message.answer('Вы ввели неверные данные!\nСлово(выражение) должны быть на английском языке,\n'
-                             'из знаков доступен только апостроф!', reply_markup=next_keyboard_1())
+        await message.answer('Вы ввели неверные данные!\nСлово(выражение) должны быть на <u>английском языке</u>,\n'
+                             'из знаков доступен <u>только апостроф!</u>', reply_markup=next_keyboard_1())
 
 
 @router.message(F.text)
@@ -81,7 +81,7 @@ async def add_new_word(message: Message, request: Request, state: FSMContext):
         await state.clear()
     else:
         await message.answer('Вы ввели неправильные данные.\n '
-                             'Введите перевод, используя только буквы русского алфавита.\n'
+                             'Введите перевод, используя <u>только буквы русского алфавита.</u>\n'
                              'Либо введите команду /start для выбора действий', reply_markup=reply_keyboard)
 
     await state.clear()
@@ -89,22 +89,20 @@ async def add_new_word(message: Message, request: Request, state: FSMContext):
 
 @router.message(F.text)
 async def lets_start(message: Message, request: Request, state: FSMContext):
-    check = await request.check_words(message.from_user.id)
-    if check:
-        word = choice(await request.lets_start(message.from_user.id)).get("english")
-        descriptions = await request.get_description(message.from_user.id)
-        translate = (await request.get_translate(word))[0].get('translate')
-        from_db = [i.get('translate') for i in descriptions if i.get('translate') != translate] +\
-                  [v for k, v in start_words.items() if v != translate]
-        all_words = list(set(from_db))
-        await message.answer(f'Выберите правильный вариант перевода для слова {word}',
-                             reply_markup=get_random_keyboard(all_words, translate))
-        await state.set_state(StepsForm.GET_TRANSLATE)
-        await state.update_data(right_word=translate, words=all_words)
+    word = choice((await request.lets_start(message.from_user.id) +
+                   [{'english': i} for i in start_words.keys()])).get("english")
+    descriptions = await request.get_description(message.from_user.id)
+    if word in list(start_words.keys()):
+        translate = start_words.get(word)
     else:
-        await message.answer('В вашей базе ещё нет слов, добавьте хотя бы одно слово!',
-                             reply_markup=reply_keyboard)
-        await state.clear()
+        translate = (await request.get_translate(word))[0].get('translate')
+    from_db = [i.get('translate') for i in descriptions if i.get('translate') != translate] +\
+              [v for k, v in start_words.items() if v != translate]
+    all_words = list(set(from_db))
+    await message.answer(f'Выберите правильный вариант перевода для слова <b>{word}</b>',
+                         reply_markup=get_random_keyboard(all_words, translate))
+    await state.set_state(StepsForm.GET_TRANSLATE)
+    await state.update_data(right_word=translate, words=all_words)
 
 
 @router.message(F.text)
@@ -112,11 +110,11 @@ async def try_translate(message: Message, state: FSMContext):
     right_word = (await state.get_data()).get('right_word')
     words = (await state.get_data()).get('words')
     if message.text.lower() == right_word:
-        await message.answer(f'Вы совершенно правы! Это {right_word}',
+        await message.answer(f'Вы совершенно правы! Это <b>{right_word}</b>',
                              reply_markup=next_keyboard())
         await state.clear()
     else:
-        await message.answer('Ответ неверный, попробуйте ещё раз. \n'
+        await message.answer('<b>Ответ неверный<b/>, попробуйте ещё раз. \n'
                              'Либо вызовите меню для выбора действий с помощью команды /start',
                              reply_markup=get_random_keyboard(words, right_word))
 
