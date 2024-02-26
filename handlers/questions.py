@@ -114,7 +114,7 @@ async def try_translate(message: Message, state: FSMContext):
                              reply_markup=next_keyboard())
         await state.clear()
     else:
-        await message.answer('<b>Ответ неверный<b/>, попробуйте ещё раз. \n'
+        await message.answer('<b>Ответ неверный</b>, попробуйте ещё раз. \n'
                              'Либо вызовите меню для выбора действий с помощью команды /start',
                              reply_markup=get_random_keyboard(words, right_word))
 
